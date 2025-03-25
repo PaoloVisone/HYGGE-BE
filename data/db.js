@@ -1,6 +1,6 @@
 const mysql = require('mysql2');
 
-const passwords = ["0175", "corso139", "fafa1234"]; // Lista di password da provare
+const passwords = ["0175", "corso139", "fafa1234", "ApologizE1975!1"]; // Lista di password da provare
 let connection;
 
 const tryConnect = async (index = 0) => {
