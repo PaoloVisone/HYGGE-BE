@@ -7,13 +7,12 @@ const notFound = require('./middlewares/notFound');
 
 const productsRouter = require('./routers/products');
 
-const imagePath = require('./middlewares/imagePath');
 
 const cors = require('cors');
 
 app.use(express.static('public'));
 app.use(express.json());
-app.use(imagePath);
+
 app.use(cors());
 
 app.get("/api", (req, res) => {
