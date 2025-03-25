@@ -8,13 +8,8 @@ router.get('/:id', show);
 
 router.get('/search', showSearchBar);
 
-<<<<<<< HEAD
-
-router.post('/:id/reviews', storeReview)
-=======
 router.get('/category/:id', showCategory);
 
 router.post('/:id/reviews/create', storeReview)
->>>>>>> origin/HEAD
 
 module.exports = router;
