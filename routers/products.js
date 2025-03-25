@@ -1,9 +1,10 @@
 const express = require('express');
-const { index } = require('../controllers/productsController');
+const { index, show } = require('../controllers/productsController');
 const router = express.Router();
 
 
 router.get('/', index);
+router.get('/:id', show);
 
 
 module.exports = router;
