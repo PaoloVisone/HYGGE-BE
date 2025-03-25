@@ -3,14 +3,13 @@ const app = express();
 const port = process.env.PORT;
 
 const errorsHandler = require('./middlewares/errorsHandler');
-const notFoundHandler = require('./middlewares/notFoundHandler');
+const notFound = require('./middlewares/notFound');
 
-const productsRouter = require('./routes/products');
+const productsRouter = require('./routers/products');
 
 const imagePath = require('./middlewares/imagePath');
 
 const cors = require('cors');
-const e = require('express');
 
 app.use(express.static('public'));
 app.use(express.json());
@@ -24,7 +23,7 @@ app.get("/api", (req, res) => {
 
 app.use('/api/products', productsRouter);
 
-app.use(notFoundHandler);
+app.use(notFound);
 app.use(errorsHandler);
 
 app.listen(port, () => {
