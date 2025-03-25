@@ -3,46 +3,45 @@ const connection = require('../data/db');
 
 // Funzione per ottenere tutti i prodotti con le loro immagini
 function index(req, res) {
-
-    // Query SQL per ottenere tutti i prodotti
+    // Query SQL per ottenere tutti i prodotti dalla tabella "products"
     const mysqlProducts = 'SELECT * FROM products';
 
-    // Query SQL per ottenere le immagini di un prodotto specifico
+    // Query SQL per ottenere le immagini di un prodotto specifico dalla tabella "images"
     const mysqlProductsWithImages = 'SELECT * FROM images WHERE product_id = ?';
 
     // Esegue la query per ottenere tutti i prodotti
     connection.query(mysqlProducts, (err, results) => {
         if (err) {
-            // Logga l'errore e restituisce un errore 500 al client
+            // Logga l'errore nel server e restituisce un errore 500 al client
             console.log(err);
-            res.status(500).send('Internal Server Error');
+            return res.status(500).send('Internal Server Error');
         }
 
         // Array per contenere i prodotti con le loro immagini
         const productsWithImages = [];
         let count = 0; // Contatore per tracciare il completamento delle query annidate
 
-        // Itera su ogni prodotto ottenuto dalla query
+        // Itera su ogni prodotto ottenuto dalla query principale
         results.forEach(product => {
             // Esegue una query per ottenere le immagini del prodotto corrente
             connection.query(mysqlProductsWithImages, [product.id], (err, images) => {
                 if (err) {
-                    // Logga l'errore e restituisce un errore 500 al client
+                    // Logga l'errore nel server e restituisce un errore 500 al client
                     console.log(err);
-                    res.status(500).send('Internal Server Error');
+                    return res.status(500).send('Internal Server Error');
                 }
 
-                // Aggiunge il prodotto con le sue immagini all'array
+                // Aggiunge il prodotto con le sue immagini all'array `productsWithImages`
                 productsWithImages.push({
-                    ...product, // Copia i dati del prodotto
-                    images: images.map(image => req.imagePath + image.url_image), // Aggiunge il percorso completo delle immagini
+                    ...product, // Copia tutti i campi del prodotto (ad esempio id, nome, prezzo, ecc.) utilizzando lo spread operator
+                    images: images.map(image => req.imagePath + image.url_image), // Trasforma l'array di immagini: per ogni immagine, aggiunge il percorso base (req.imagePath) al nome del file immagine (image.url_image) per creare un URL completo
                 });
 
-                count++; // Incrementa il contatore
+                count++; // Incrementa il contatore per ogni query completata
 
                 // Se tutte le query annidate sono completate, restituisce i dati al client
                 if (count === results.length) {
-                    res.json(productsWithImages);
+                    res.json(productsWithImages); // Restituisce l'array di prodotti con immagini
                 }
             });
         });
@@ -54,19 +53,16 @@ function show(req, res) {
     // Ottiene l'ID del prodotto dai parametri della richiesta
     const id = req.params.id;
 
-    // Query SQL per ottenere il prodotto con l'ID specificato
+    // Query SQL per ottenere il prodotto con l'ID specificato dalla tabella "products"
     const sql = 'SELECT * FROM products WHERE id = ?';
 
-    // Query SQL per ottenere le recensioni del prodotto specificato
+    // Query SQL per ottenere le recensioni del prodotto specificato dalla tabella "reviews"
     const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
-
-    // Query SQL per ottenere le immagini del prodotto specificato
-    const imagesSql = "SELECT url_image FROM images WHERE product_id = ?";
 
     // Esegue la query per ottenere il prodotto
     connection.query(sql, [id], (err, results) => {
         if (err) {
-            // Restituisce un errore 500 se la query fallisce
+            // Logga l'errore e restituisce un errore 500 se la query fallisce
             return res.status(500).json({ error: "Il database non risponde" });
         }
         if (results.length === 0) {
@@ -77,30 +73,27 @@ function show(req, res) {
         // Esegue la query per ottenere le recensioni del prodotto
         connection.query(reviewSql, [id], (err, reviews) => {
             if (err) {
-                // Restituisce un errore 500 se la query fallisce
+                // Logga l'errore e restituisce un errore 500 se la query fallisce
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
-            // Esegue la query per ottenere le immagini del prodotto
-            connection.query(imagesSql, [id], (err, images) => {
-                if (err) {
-                    // Restituisce un errore 500 se la query fallisce
-                    return res.status(500).json({ error: "Il database non risponde" });
-                }
+            // Aggiunge le recensioni al prodotto
+            results[0].reviews = reviews;
 
-                // Aggiunge le recensioni e le immagini al prodotto
-                results[0].reviews = reviews;
-                results[0].images = images.map(image => req.imagePath + image.url_image); // Crea i percorsi completi
-
-                // Restituisce il prodotto con le sue recensioni e immagini al client
-                res.json(results[0]);
-            });
+            // Restituisce il prodotto con le sue recensioni al client
+            res.json(results[0]);
         });
     });
 }
 
+// Funzione per salvare una nuova recensione
+function storeReview(req, res) {
+
+}
+
 // Esporta le funzioni per essere utilizzate in altre parti dell'applicazione
 module.exports = {
-    index,
-    show
+    index, // Funzione per ottenere tutti i prodotti con immagini
+    show, // Funzione per ottenere un singolo prodotto con recensioni
+    storeReview // Funzione per salvare una nuova recensione
 };
