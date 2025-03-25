@@ -101,7 +101,17 @@ function show(req, res) {
 
 // Funzione per salvare una nuova recensione
 function storeReview(req, res) {
+    const { id } = req.params;
 
+    const { name, review, rating } = req.body;
+
+    const newReviewSql = 'INSERT INTO reviews (name, review,rating,product_id) VALUES (?, ?, ?,?)';
+
+    connection.query(newReviewSql, [name, review, rating, id], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database query failed" })
+        res.status(201)
+        return res.json({ message: "Review added", id: results.insertId })
+    })
 }
 
 // Esporta le funzioni per essere utilizzate in altre parti dell'applicazione

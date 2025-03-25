@@ -7,6 +7,6 @@ router.get('/', index);
 router.get('/:id', show);
 
 
-router.post('/:id/reviews', storeReview)
+router.post('/:id/reviews/create', storeReview)
 
 module.exports = router;
