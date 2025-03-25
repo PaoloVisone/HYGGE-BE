@@ -59,6 +59,8 @@ function show(req, res) {
     // Query SQL per ottenere le recensioni del prodotto specificato dalla tabella "reviews"
     const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
 
+    const imagesSql = "SELECT * FROM images WHERE product_id = ?";
+
     // Esegue la query per ottenere il prodotto
     connection.query(sql, [id], (err, results) => {
         if (err) {
@@ -77,18 +79,138 @@ function show(req, res) {
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
-            // Aggiunge le recensioni al prodotto
-            results[0].reviews = reviews;
+            connection.query(imagesSql, [id], (err, images) => {
+                if (err) {
+                    return res.status(500).json({ error: "Il database non risponde" });
+                }
 
-            // Restituisce il prodotto con le sue recensioni al client
-            res.json(results[0]);
+                // Aggiunge le recensioni al prodotto
+                results[0].reviews = reviews;
+                results[0].images = images.map(image => req.imagePath + image.url_image);
+
+                // Restituisce il prodotto con le sue recensioni al client
+                res.json(results[0]);
+            });
+
+
+
+
         });
+    });
+}
+
+// Funzione Show per le categorie
+function showCategory(req, res) {
+    // Ottiene l'ID della categoria dai parametri della richiesta
+    const { id } = req.params;
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name, 
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = ?;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata
+    connection.query(sql, [id], (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+// funzione per le ricerche
+function showSearchBar(req, res) {
+    const searchTerm = req.query.q; // Ottiene il termine di ricerca dalla query string dell'URL
+
+    // Verifica se il termine di ricerca è presente
+    if (!searchTerm) {
+        return res.status(400).json({ error: 'Termine di ricerca mancante' });
+    }
+
+    // Definisce la query SQL per selezionare i prodotti e le immagini associate
+    const sqlQuery = `
+      SELECT products.*, images.url_image 
+      FROM products 
+      JOIN images ON products.id = images.product_id
+      WHERE products.name LIKE ?
+    `;
+
+    // Esegue la query SQL utilizzando la connessione al database
+    connection.query(sqlQuery, [`%${searchTerm}%`], (err, results) => {
+        // Gestisce eventuali errori durante l'esecuzione della query
+        if (err) {
+            console.error('Errore durante la ricerca dei prodotti:', err);
+            return res.status(500).json({ error: 'Errore interno del server' });
+        }
+
+        // Organizza i risultati per prodotto, raggruppando le immagini in un array
+        const products = {};
+        results.forEach((row) => {
+            // Se il prodotto non è ancora presente nell'oggetto `products`, lo aggiunge
+            if (!products[row.id]) {
+                products[row.id] = {
+                    ...row, // Copia tutte le proprietà del prodotto
+                    images: [row.url_image], // Inizializza l'array delle immagini con la prima immagine trovata
+                };
+                delete products[row.id].url_image; // Rimuove la colonna `url_image` duplicata
+            } else {
+                // Se il prodotto è già presente, aggiunge l'URL dell'immagine all'array `images`
+                products[row.id].images.push(row.url_image);
+            }
+        });
+
+        // Invia la risposta JSON con l'array dei prodotti e le relative immagini
+        res.json(Object.values(products));
     });
 }
 
 // Funzione per salvare una nuova recensione
 function storeReview(req, res) {
+    const { id } = req.params;
 
+    const { name, review, rating } = req.body;
+
+    const newReviewSql = 'INSERT INTO reviews (name, review,rating,product_id) VALUES (?, ?, ?,?)';
+
+    connection.query(newReviewSql, [name, review, rating, id], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database query failed" })
+        res.status(201)
+        return res.json({ message: "Review added", id: results.insertId })
+    })
 }
 
 // Funzione Show per le categorie
@@ -197,6 +319,10 @@ module.exports = {
     storeReview, // Funzione per salvare una nuova recensione
     showCategory,
     showSearchBar
+<<<<<<< HEAD
 };
 
 
+=======
+};
+>>>>>>> origin/HEAD
