@@ -319,10 +319,4 @@ module.exports = {
     storeReview, // Funzione per salvare una nuova recensione
     showCategory,
     showSearchBar
-<<<<<<< HEAD
 };
-
-
-=======
-};
->>>>>>> origin/HEAD
