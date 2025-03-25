@@ -59,6 +59,8 @@ function show(req, res) {
     // Query SQL per ottenere le recensioni del prodotto specificato dalla tabella "reviews"
     const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
 
+    const imagesSql = "SELECT * FROM images WHERE product_id = ?";
+
     // Esegue la query per ottenere il prodotto
     connection.query(sql, [id], (err, results) => {
         if (err) {
@@ -77,11 +79,22 @@ function show(req, res) {
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
-            // Aggiunge le recensioni al prodotto
-            results[0].reviews = reviews;
+            connection.query(imagesSql, [id], (err, images) => {
+                if (err) {
+                    return res.status(500).json({ error: "Il database non risponde" });
+                }
 
-            // Restituisce il prodotto con le sue recensioni al client
-            res.json(results[0]);
+                // Aggiunge le recensioni al prodotto
+                results[0].reviews = reviews;
+                results[0].images = images.map(image => req.imagePath + image.url_image);
+
+                // Restituisce il prodotto con le sue recensioni al client
+                res.json(results[0]);
+            });
+
+
+
+
         });
     });
 }
