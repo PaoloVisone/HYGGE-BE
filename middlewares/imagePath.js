@@ -6,5 +6,6 @@ function setImagePath(req, res, next) {
     next();
 }
 
+
 // Esporta la funzione in modo che possa essere utilizzata in altre parti dell'applicazione
 module.exports = setImagePath;
