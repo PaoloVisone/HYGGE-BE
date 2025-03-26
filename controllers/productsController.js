@@ -99,10 +99,7 @@ function show(req, res) {
     });
 }
 
-// Funzione Show per le categorie
-function showCategory(req, res) {
-    // Ottiene l'ID della categoria dai parametri della richiesta
-    const { id } = req.params;
+function cameraDaLetto(req, res) {
 
     // Query SQL per ottenere i prodotti con le categorie e le immagini associate
     const sql = `
@@ -111,16 +108,16 @@ function showCategory(req, res) {
             products.name, 
             products.price, 
             products.description, 
-            categories.name, 
+            categories.name AS category_name,
             images.url_image 
         FROM products 
         JOIN categories ON categories.id = products.category_id 
         JOIN images  ON products.id = images.product_id
-        WHERE categories.id = ?;
+        WHERE categories.id = 1;
     `;
 
-    // Esegue la query per ottenere i prodotti della categoria specificata
-    connection.query(sql, [id], (err, results) => {
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
         if (err) {
             // Logga l'errore e restituisce un errore 500 al client
             console.log(err);
@@ -151,6 +148,258 @@ function showCategory(req, res) {
         res.json(products);
     });
 }
+
+function bagno(req, res) {
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name AS category_name,
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = 2;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+function salotto(req, res) {
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name AS category_name,
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = 3;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+function salaDaPranzo(req, res) {
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name AS category_name,
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = 4;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+function giardino(req, res) {
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name AS category_name,
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = 5;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+function garage(req, res) {
+
+    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const sql = `
+        SELECT 
+            products.id, 
+            products.name, 
+            products.price, 
+            products.description, 
+            categories.name AS category_name,
+            images.url_image 
+        FROM products 
+        JOIN categories ON categories.id = products.category_id 
+        JOIN images  ON products.id = images.product_id
+        WHERE categories.id = 6;
+    `;
+
+    // Esegue la query per ottenere i prodotti della categoria specificata (ID 6)
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Mappa i prodotti e raggruppa le immagini per prodotto
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                product.images.push(req.imagePath + row.url_image);
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
+                });
+            }
+            return acc;
+        }, []);
+
+        // Restituisce i prodotti con le immagini al client
+        res.json(products);
+    });
+}
+
+
 
 // funzione per le ricerche
 function showSearchBar(req, res) {
@@ -219,6 +468,11 @@ module.exports = {
     index, // Funzione per ottenere tutti i prodotti con immagini
     show, // Funzione per ottenere un singolo prodotto con recensioni
     storeReview, // Funzione per salvare una nuova recensione
-    showCategory,
+    cameraDaLetto,
+    bagno,
+    salotto,
+    salaDaPranzo,
+    giardino,
+    garage,
     showSearchBar
 };
