@@ -403,50 +403,89 @@ function garage(req, res) {
 
 // funzione per le ricerche
 function showSearchBar(req, res) {
-    const searchTerm = req.query.q; // Ottiene il termine di ricerca dalla query string dell'URL
+    console.log('--- showSearchBar chiamata ---');
 
-    // Verifica se il termine di ricerca è presente
+    const { name, category } = req.query;
+
+    let searchTerm = null;
+    let searchConditions = [];
+    let queryParams = [];
+
+    if (name) {
+        searchTerm = name;
+        searchConditions.push("LOWER(products.name) LIKE ?");
+        queryParams.push(`%${name.toLowerCase()}%`);
+    }
+
+    if (category) {
+        searchTerm = category;
+        searchConditions.push("LOWER(categories.name) LIKE ?");
+        queryParams.push(`%${category.toLowerCase()}%`);
+    }
+
+    if (name && category) {
+        searchTerm = `${name} e ${category}`;
+        // If both name and category are provided, you might want to adjust the logic
+        // based on your specific search requirements.
+        // For example, you might want to search for products that match *both* name and category,
+        // or products that match *either* name or category.
+        // The current implementation will effectively search for products matching either.
+    }
+
+    console.log('Termine di ricerca:', searchTerm);
+
     if (!searchTerm) {
         return res.status(400).json({ error: 'Termine di ricerca mancante' });
     }
 
-    // Definisce la query SQL per selezionare i prodotti e le immagini associate
-    const sqlQuery = `
-      SELECT products.*, images.url_image 
-      FROM products 
-      JOIN images ON products.id = images.product_id
-      WHERE products.name LIKE ?
+    let sqlQuery = `
+        SELECT
+            products.id,
+            products.name,
+            products.price,
+            products.description,
+            categories.name AS category_name,
+            images.url_image
+        FROM products
+        LEFT JOIN images ON products.id = images.product_id
+        LEFT JOIN categories ON products.category_id = categories.id
+        WHERE ${searchConditions.join(' OR ')}
     `;
 
-    // Esegue la query SQL utilizzando la connessione al database
-    connection.query(sqlQuery, [`%${searchTerm}%`], (err, results) => {
-        // Gestisce eventuali errori durante l'esecuzione della query
+    console.log('Eseguendo query:', sqlQuery, queryParams);
+
+    connection.query(sqlQuery, queryParams, (err, results) => {
         if (err) {
             console.error('Errore durante la ricerca dei prodotti:', err);
             return res.status(500).json({ error: 'Errore interno del server' });
         }
 
-        // Organizza i risultati per prodotto, raggruppando le immagini in un array
-        const products = {};
-        results.forEach((row) => {
-            // Se il prodotto non è ancora presente nell'oggetto `products`, lo aggiunge
-            if (!products[row.id]) {
-                products[row.id] = {
-                    ...row, // Copia tutte le proprietà del prodotto
-                    images: [row.url_image], // Inizializza l'array delle immagini con la prima immagine trovata
-                };
-                delete products[row.id].url_image; // Rimuove la colonna `url_image` duplicata
-            } else {
-                // Se il prodotto è già presente, aggiunge l'URL dell'immagine all'array `images`
-                products[row.id].images.push(row.url_image);
-            }
-        });
+        console.log('Risultati della query:', results);
 
-        // Invia la risposta JSON con l'array dei prodotti e le relative immagini
-        res.json(Object.values(products));
+        const products = results.reduce((acc, row) => {
+            const product = acc.find(p => p.id === row.id);
+            if (product) {
+                // Aggiunge l'immagine al prodotto esistente
+                if (row.url_image) {
+                    product.images.push(req.imagePath + row.url_image);
+                }
+            } else {
+                // Crea un nuovo prodotto con le immagini
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: row.url_image ? [req.imagePath + row.url_image] : []
+                });
+            }
+            return acc;
+        }, []);
+
+        res.json(products);
     });
 }
-
 // Funzione per salvare una nuova recensione
 function storeReview(req, res) {
     const { id } = req.params;

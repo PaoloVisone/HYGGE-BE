@@ -3,10 +3,13 @@ const { index, show, storeReview, cameraDaLetto, bagno, salotto, salaDaPranzo, s
 const router = express.Router();
 
 
+router.get('/search', showSearchBar);
+
 router.get('/', index);
 router.get('/:id', show);
 
-router.get('/search', showSearchBar);
+
+
 
 router.get('/category/cameraDaLetto', cameraDaLetto);
 router.get('/category/bagno', bagno);
