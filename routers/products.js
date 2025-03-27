@@ -1,27 +1,18 @@
 const express = require('express');
-const { index, show, storeReview, cameraDaLetto, bagno, salotto, salaDaPranzo, showSearchBar, giardino, garage } = require('../controllers/productsController');
+const { index, show, storeReview, showCategories, showSearchBar, indexCategories } = require('../controllers/productsController');
 const router = express.Router();
 
 
 router.get('/search', showSearchBar);
 
 router.get('/', index);
+
+router.get('/category', indexCategories);
+
+
 router.get('/:id', show);
 
-
-
-
-router.get('/category/cameraDaLetto', cameraDaLetto);
-router.get('/category/bagno', bagno);
-router.get('/category/salotto', salotto);
-router.get('/category/salaDaPranzo', salaDaPranzo);
-router.get('/category/giardino', giardino);
-router.get('/category/garage', garage);
-
-
-
-
-
+router.get('/category/:id', showCategories);
 
 router.post('/:id/reviews/create', storeReview)
 
