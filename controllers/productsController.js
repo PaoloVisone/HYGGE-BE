@@ -1,6 +1,4 @@
 // Importa la connessione al database dal file db.js
-
-const mysql = require('mysql2/promise'); // Importa il modulo mysql2 per connessioni asincrone
 const connection = require('../data/db');
 
 // Funzione per ottenere tutti i prodotti con le loro immagini
