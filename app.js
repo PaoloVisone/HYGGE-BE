@@ -26,7 +26,7 @@ const sendOrderConfirmationEmail = async (email, orderDetails) => {
         from: "albertoorlandowork@gmail.com", // Usa un'email valida
         to: email,
         subject: "Conferma del tuo ordine",
-        text: `Grazie per il tuo ordine! Dettagli ordine: ${JSON.stringify(orderDetails)}`,
+        text: `Grazie per il tuo ordine! CODICE ordine: ${JSON.stringify(orderDetails)}`,
     };
     try {
         const info = await transporter.sendMail(mailOptions); // Usa `await`
@@ -57,11 +57,11 @@ app.post("/api/confirm-order", (req, res) => {
     // Invia l'email di conferma
     sendOrderConfirmationEmail(email, orderDetails)
         .then(() => {
-            res.status(200).send("Email inviata con successo!");
+            res.status(200).json({ message: "Email inviata con successo!" }); // Restituisce un JSON valido
         })
         .catch((error) => {
             console.error(error);
-            res.status(500).send("Errore nell'invio dell'email.");
+            res.status(500).json({ error: "Errore nell'invio dell'email." }); // Restituisce un JSON valido in caso di errore
         });
 });
 app.use(notFound);
