@@ -1,5 +1,6 @@
 // Importa la connessione al database configurata nel file db.js
 const connection = require('../data/db');
+const nodemailer = require('nodemailer'); // Import nodemailer for sending emails
 
 /**
  * GESTIONE PRODOTTI E IMMAGINI
@@ -336,19 +337,58 @@ function indexEmail(req, res) {
 
 // funzione per il pop up
 function storeEmail(req, res) {
-
     const { email } = req.body;
 
-    const sql = `
-        INSERT INTO client_email (email) VALUES (?)
-    `;
+    // Query to check if the email already exists
+    const checkEmailSql = 'SELECT * FROM client_email WHERE email = ?';
 
-    connection.query(sql, [email], (err, results) => {
-        if (err) return res.status(500).json({ error: "Database query failed" })
-        res.status(201)
-        return res.json({ message: "Email added", id: results.insertId })
-    })
+    connection.query(checkEmailSql, [email], (err, results) => {
+        if (err) {
+            console.error("Error checking email:", err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
 
+        // If email already exists, return a conflict response
+        if (results.length > 0) {
+            return res.status(409).json({ message: "Email already registered" });
+        }
+
+        // Query to insert the new email
+        const insertEmailSql = 'INSERT INTO client_email (email) VALUES (?)';
+
+        connection.query(insertEmailSql, [email], (err, insertResults) => {
+            if (err) {
+                console.error("Error inserting email:", err);
+                return res.status(500).json({ error: "Database query failed" });
+            }
+
+            // Send a welcome email
+            const transporter = nodemailer.createTransport({
+                service: 'gmail', // Use your email service provider
+                auth: {
+                    user: 'albertoorlandowork@gmail.com', // Replace with your email
+                    pass: process.env.DB_PASS_EMAIL   // Replace with your email password
+                }
+            });
+
+            const mailOptions = {
+                from: 'albertoorlandowork@gmail.com', // Replace with your email
+                to: email,
+                subject: 'Welcome to Our Newsletter!',
+                text: 'Thank you for subscribing to our newsletter. Stay tuned for updates!'
+            };
+
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    console.error("Error sending email:", err);
+                    return res.status(500).json({ error: "Failed to send welcome email" });
+                }
+
+                console.log("Welcome email sent:", info.response);
+                res.status(201).json({ message: "Email added and welcome email sent", id: insertResults.insertId });
+            });
+        });
+    });
 }
 
 // Esporta le funzioni per l'uso in altre parti dell'applicazione
