@@ -294,6 +294,39 @@ function storeOrder(req, res) {
     });
 }
 
+function indexEmail(req, res) {
+    // Query SQL per ottenere tutte le email
+    const sql = 'SELECT * FROM client_email';
+
+    // Esegue la query per ottenere tutte le email
+    connection.query(sql, (err, results) => {
+        if (err) {
+            // Logga l'errore e restituisce un errore 500 al client
+            console.log(err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
+
+        // Restituisce le email al client
+        res.json(results);
+    });
+}
+
+// funzione per il pop up
+function storeEmail(req, res) {
+
+    const { email } = req.body;
+
+    const sql = `
+        INSERT INTO client_email (email) VALUES (?)
+    `;
+
+    connection.query(sql, [email], (err, results) => {
+        if (err) return res.status(500).json({ error: "Database query failed" })
+        res.status(201)
+        return res.json({ message: "Email added", id: results.insertId })
+    })
+
+}
 
 // Esporta le funzioni per essere utilizzate in altre parti dell'applicazione
 module.exports = {
@@ -303,5 +336,7 @@ module.exports = {
     showSearchBar,
     showCategories,
     indexCategories,
-    storeOrder
+    storeOrder,
+    storeEmail,
+    indexEmail
 };

@@ -1,5 +1,5 @@
 const express = require('express');
-const { index, show, storeReview, showCategories, showSearchBar, indexCategories, storeOrder } = require('../controllers/productsController');
+const { index, show, storeReview, showCategories, showSearchBar, indexCategories, storeOrder, storeEmail, indexEmail } = require('../controllers/productsController');
 const router = express.Router();
 
 
@@ -11,11 +11,16 @@ router.get('/category', indexCategories);
 
 router.post('/order', storeOrder)
 
+router.get('/email', indexEmail)
+
+router.post('/email/create', storeEmail)
 
 router.get('/:id', show);
 
 router.get('/category/:id', showCategories);
 
 router.post('/:id/reviews/create', storeReview)
+
+
 
 module.exports = router;
