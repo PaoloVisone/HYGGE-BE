@@ -21,12 +21,14 @@ function index(req, res) {
     connection.query(mysqlProducts, (err, results) => {
         // Gestione errori nella query principale
         if (err) {
+            // Se c'è un errore, stampa il messaggio di errore e invia una risposta di errore 500 (Internal Server Error)
             console.error("Error fetching products:", err);
             return res.status(500).send('Internal Server Error');
         }
 
         // Array per memorizzare i prodotti con le loro immagini
         const productsWithImages = [];
+
         // Contatore per tenere traccia delle query completate
         let count = 0;
 
@@ -36,29 +38,33 @@ function index(req, res) {
             connection.query(mysqlProductsWithImages, [product.id], (err, images) => {
                 // Gestione errori nella query delle immagini
                 if (err) {
+                    // Se c'è un errore nella query delle immagini, stampa il messaggio di errore e invia una risposta di errore 500
                     console.error("Error fetching product images:", err);
                     return res.status(500).send('Internal Server Error');
                 }
 
-                // Aggiunge il prodotto e le sue immagini all'array
+                // Aggiunge il prodotto e le sue immagini all'array `productsWithImages`
                 productsWithImages.push({
                     ...product, // Spread operator per copiare tutte le proprietà del prodotto
-                    // Mappa le immagini aggiungendo il percorso base
+                    // Mappa le immagini aggiungendo il percorso base (che potrebbe essere qualcosa come "http://example.com/images/")
                     images: images.map(image => req.imagePath + image.url_image)
                 });
 
                 // Incrementa il contatore delle query completate
                 count++;
 
-                // Se tutte le query sono completate, invia la risposta
+                // Se tutte le query sono completate (cioè quando il contatore è uguale alla lunghezza dell'array di prodotti)
                 if (count === results.length) {
+                    // Stampa un messaggio di successo nel log
                     console.log("Products with images fetched successfully");
+                    // Invia la risposta JSON con i prodotti e le loro immagini
                     res.json(productsWithImages);
                 }
             });
         });
     });
 }
+
 
 /**
  * GESTIONE SINGOLO PRODOTTO
@@ -69,81 +75,93 @@ function show(req, res) {
     // Log per debug con l'ID del prodotto richiesto
     console.log("Show function called with ID:", req.params.id);
 
-    // Recupera l'ID del prodotto dai parametri della richiesta
+    // Recupera l'ID del prodotto dai parametri della richiesta (presumibilmente passato nell'URL)
     const id = req.params.id;
 
-    // Query SQL per ottenere il prodotto specifico
+    // Query SQL per ottenere il prodotto specifico tramite l'ID
     const sql = 'SELECT * FROM products WHERE id = ?';
 
-    // Query SQL per ottenere le recensioni del prodotto
+    // Query SQL per ottenere le recensioni associate al prodotto
     const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
 
-    // Query SQL per ottenere le immagini del prodotto
+    // Query SQL per ottenere le immagini associate al prodotto
     const imagesSql = "SELECT * FROM images WHERE product_id = ?";
 
-    // Esegue la query principale per ottenere il prodotto
+    // Esegue la query principale per ottenere il prodotto specifico
     connection.query(sql, [id], (err, results) => {
         // Gestione errori nella query del prodotto
         if (err) {
+            // Se si verifica un errore durante il recupero del prodotto, stampa l'errore e invia una risposta di errore 500
             console.error("Error fetching product:", err);
             return res.status(500).json({ error: "Il database non risponde" });
         }
 
-        // Se il prodotto non viene trovato
+        // Se il prodotto non viene trovato nel database
         if (results.length === 0) {
+            // Stampa un avviso nel caso in cui il prodotto con l'ID richiesto non esista
             console.warn("Product not found for ID:", id);
+            // Risponde con errore 404 (prodotto non trovato)
             return res.status(404).json({ error: "Prodotto non trovato" });
         }
 
-        // Query per ottenere le recensioni
+        // Esegue la query per ottenere le recensioni associate al prodotto
         connection.query(reviewSql, [id], (err, reviews) => {
             // Gestione errori nella query delle recensioni
             if (err) {
+                // Se si verifica un errore durante il recupero delle recensioni, stampa l'errore e invia una risposta di errore 500
                 console.error("Error fetching reviews:", err);
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
-            // Query per ottenere le immagini
+            // Esegue la query per ottenere le immagini associate al prodotto
             connection.query(imagesSql, [id], (err, images) => {
                 // Gestione errori nella query delle immagini
                 if (err) {
+                    // Se si verifica un errore durante il recupero delle immagini, stampa l'errore e invia una risposta di errore 500
                     console.error("Error fetching images:", err);
                     return res.status(500).json({ error: "Il database non risponde" });
                 }
 
-                // Aggiunge recensioni e immagini al prodotto
+                // Aggiunge le recensioni e le immagini al prodotto trovato
                 results[0].reviews = reviews;
+                // Mappa le immagini aggiungendo il percorso base per ogni URL immagine
                 results[0].images = images.map(image => req.imagePath + image.url_image);
 
-                // Log di successo
+                // Log di successo per il recupero del prodotto con recensioni e immagini
                 console.log("Product fetched successfully with reviews and images");
 
-                // Invia la risposta completa
+                // Invia la risposta completa al client con il prodotto, le recensioni e le immagini
                 res.json(results[0]);
             });
         });
     });
 }
 
+
+// Funzione per ottenere tutte le categorie
 function indexCategories(req, res) {
-    // Query SQL per ottenere tutte le categorie
+    // Query SQL per ottenere tutte le categorie dal database
     const sql = 'SELECT * FROM categories';
 
     // Esegue la query per ottenere tutte le categorie
     connection.query(sql, (err, results) => {
+        // Gestione errori nella query delle categorie
         if (err) {
-            // Logga l'errore e restituisce un errore 500 al client
+            // Se si verifica un errore nella query, stampa l'errore e invia una risposta di errore 500
             console.log(err);
             return res.status(500).json({ error: "Database query failed" });
         }
 
-        // Restituisce le categorie al client
+        // Restituisce le categorie al client in formato JSON
         res.json(results);
     });
 }
 
+
+// Funzione per ottenere i prodotti di una categoria specifica con le immagini associate
 function showCategories(req, res) {
 
+    // Estrae l'ID della categoria dai parametri della richiesta
     const { id } = req.params;
 
     // Query SQL per ottenere i prodotti con le categorie e le immagini associate
@@ -161,35 +179,39 @@ function showCategories(req, res) {
         WHERE categories.id = ?;
     `;
 
-    // Esegue la query per ottenere i prodotti della categoria specificata 
+    // Esegue la query per ottenere i prodotti della categoria specificata (con le immagini associate)
     connection.query(sql, [id], (err, results) => {
+        // Gestione errori nella query
         if (err) {
-            // Logga l'errore e restituisce un errore 500 al client
+            // Se c'è un errore durante l'esecuzione della query, stampa l'errore e invia una risposta 500
             console.log(err);
             return res.status(500).json({ error: "Database query failed" });
         }
 
         // Mappa i prodotti e raggruppa le immagini per prodotto
         const products = results.reduce((acc, row) => {
+            // Cerca se il prodotto è già stato aggiunto all'array accumulato
             const product = acc.find(p => p.id === row.id);
             if (product) {
-                // Aggiunge l'immagine al prodotto esistente
+                // Se il prodotto esiste già, aggiungi l'immagine al suo array di immagini
                 product.images.push(req.imagePath + row.url_image);
             } else {
-                // Crea un nuovo prodotto con le immagini
-                acc.push({
-                    id: row.id,
-                    name: row.name,
-                    price: row.price,
-                    description: row.description,
-                    category_name: row.category_name,
-                    images: [req.imagePath + row.url_image]
-                });
-            }
-            return acc;
-        }, []);
+                // Se il prodotto non esiste, crea un nuovo oggetto prodotto con le immagini
+                acc.push({  // Aggiunge un nuovo prodotto all'array `acc` (l'array accumulato)
+                    id: row.id,  // L'ID del prodotto (dal database)
+                    name: row.name,  // Il nome del prodotto (dal database)
+                    price: row.price,  // Il prezzo del prodotto (dal database)
+                    description: row.description,  // La descrizione del prodotto (dal database)
+                    category_name: row.category_name,  // Il nome della categoria a cui appartiene il prodotto (dal database)
+                    images: [req.imagePath + row.url_image]  // Aggiunge l'URL completo dell'immagine del prodotto, concatenando `req.imagePath` e `row.url_image`
 
-        // Restituisce i prodotti con le immagini al client
+                });
+
+            }
+            return acc;  // Restituisce l'array aggiornato di prodotti
+        }, []);  // Inizia con un array vuoto
+
+        // Restituisce l'array di prodotti con le immagini al client
         res.json(products);
     });
 }
@@ -198,199 +220,240 @@ function showCategories(req, res) {
 
 // funzione per le ricerche
 function showSearchBar(req, res) {
+    // Estrae i parametri della query dalla richiesta (req.query) per nome, categoria e prezzi
     const { name, category, minPrice, maxPrice } = req.query; // Aggiungi i parametri per il prezzo
 
-    let searchConditions = [];
-    let queryParams = [];
+    let searchConditions = [];  // Array per memorizzare le condizioni di ricerca
+    let queryParams = [];       // Array per memorizzare i valori dei parametri da passare alla query SQL
 
-    // Filtro per il nome del prodotto
+    // Filtro per il nome del prodotto (se fornito nella query)
     if (name) {
-        searchConditions.push("LOWER(products.name) LIKE ?");
-        queryParams.push(`%${name.toLowerCase()}%`);
+        searchConditions.push("LOWER(products.name) LIKE ?");  // Aggiunge una condizione per cercare il nome (ignorando maiuscole/minuscole)
+        queryParams.push(`%${name.toLowerCase()}%`);  // Aggiunge il nome alla lista dei parametri della query (come "LIKE %nome%")
     }
 
-    // Filtro per la categoria
+    // Filtro per la categoria (se fornito nella query)
     if (category) {
-        searchConditions.push("LOWER(categories.name) LIKE ?");
-        queryParams.push(`%${category.toLowerCase()}%`);
+        searchConditions.push("LOWER(categories.name) LIKE ?");  // Aggiunge una condizione per cercare la categoria (ignorando maiuscole/minuscole)
+        queryParams.push(`%${category.toLowerCase()}%`);  // Aggiunge la categoria alla lista dei parametri della query (come "LIKE %categoria%")
     }
 
-    // Filtro per il prezzo minimo
+    // Filtro per il prezzo minimo (se fornito nella query)
     if (minPrice) {
-        searchConditions.push("products.price >= ?");
-        queryParams.push(Number(minPrice));
+        searchConditions.push("products.price >= ?");  // Aggiunge una condizione per il prezzo minimo
+        queryParams.push(Number(minPrice));  // Aggiunge il valore del prezzo minimo alla lista dei parametri (come valore numerico)
     }
 
-    // Filtro per il prezzo massimo
+    // Filtro per il prezzo massimo (se fornito nella query)
     if (maxPrice) {
-        searchConditions.push("products.price <= ?");
-        queryParams.push(Number(maxPrice));
+        searchConditions.push("products.price <= ?");  // Aggiunge una condizione per il prezzo massimo
+        queryParams.push(Number(maxPrice));  // Aggiunge il valore del prezzo massimo alla lista dei parametri (come valore numerico)
     }
 
-    // Verifica che ci sia almeno un termine di ricerca
+    // Verifica che ci sia almeno un termine di ricerca (altrimenti restituisce un errore)
     if (searchConditions.length === 0) {
-        return res.status(400).json({ error: 'Nessun criterio di ricerca fornito' });
+        return res.status(400).json({ error: 'Nessun criterio di ricerca fornito' });  // Se non ci sono filtri, restituisce un errore
     }
 
-    // Costruisce la query SQL
+    // Costruisce la query SQL dinamicamente in base alle condizioni di ricerca
     const sqlQuery = `
         SELECT
-            products.id,
-            products.name,
-            products.price,
-            products.description,
-            categories.name AS category_name,
-            images.url_image
+            products.id,  
+            products.name,  
+            products.price,  
+            products.description,  
+            categories.name AS category_name,  
+            images.url_image 
         FROM products
-        LEFT JOIN images ON products.id = images.product_id
+        LEFT JOIN images ON products.id = images.product_id 
         LEFT JOIN categories ON products.category_id = categories.id
-        WHERE ${searchConditions.join(' AND ')}
+        WHERE ${searchConditions.join(' AND ')} 
     `;
 
-    // Esegue la query
+    // Esegue la query SQL nel database
     connection.query(sqlQuery, queryParams, (err, results) => {
+        // Gestisce eventuali errori durante l'esecuzione della query
         if (err) {
-            console.error('Errore durante la ricerca dei prodotti:', err);
-            return res.status(500).json({ error: 'Errore interno del server' });
+            console.error('Errore durante la ricerca dei prodotti:', err);  // Log dell'errore
+            return res.status(500).json({ error: 'Errore interno del server' });  // Risposta di errore al client
         }
 
-        // Raggruppa i prodotti e le immagini
+        // Raggruppa i risultati dei prodotti e delle immagini (nel caso ci siano più immagini per lo stesso prodotto)
         const products = results.reduce((acc, row) => {
-            const product = acc.find(p => p.id === row.id);
+            const product = acc.find(p => p.id === row.id);  // Cerca se il prodotto è già presente nell'array
             if (product) {
-                // Aggiunge l'immagine al prodotto esistente
+                // Se il prodotto esiste già, aggiungi l'immagine alla lista delle immagini
                 if (row.url_image) {
-                    product.images.push(req.imagePath + row.url_image);
+                    product.images.push(req.imagePath + row.url_image);  // Aggiunge l'URL completo dell'immagine
                 }
             } else {
-                // Crea un nuovo prodotto con le immagini
+                // Se il prodotto non esiste, lo crea con le informazioni di base e l'immagine
                 acc.push({
-                    id: row.id,
-                    name: row.name,
-                    price: row.price,
-                    description: row.description,
-                    category_name: row.category_name,
-                    images: row.url_image ? [req.imagePath + row.url_image] : []
+                    id: row.id,  // Id del prodotto
+                    name: row.name,  // Nome del prodotto
+                    price: row.price,  // Prezzo del prodotto
+                    description: row.description,  // Descrizione del prodotto
+                    category_name: row.category_name,  // Nome della categoria
+                    images: row.url_image ? [req.imagePath + row.url_image] : []  // Aggiunge l'immagine se disponibile
                 });
             }
-            return acc;
-        }, []);
+            return acc;  // Restituisce l'array aggiornato di prodotti
+        }, []);  // Inizializza l'array vuoto per raccogliere i risultati
 
-        // Restituisce i prodotti filtrati
+        // Restituisce i prodotti filtrati come risposta JSON
         res.json(products);
     });
 }
+
 // Funzione per salvare una nuova recensione
 function storeReview(req, res) {
+    // Estrae l'ID del prodotto dalla URL (parametri della richiesta)
     const { id } = req.params;
 
+    // Estrae i dati della recensione (nome, testo e valutazione) dal corpo della richiesta
     const { name, review, rating } = req.body;
 
-    const newReviewSql = 'INSERT INTO reviews (name, review,rating,product_id) VALUES (?, ?, ?,?)';
+    // Definisce la query SQL per inserire la nuova recensione nel database
+    const newReviewSql = 'INSERT INTO reviews (name, review, rating, product_id) VALUES (?, ?, ?, ?)';
 
+    // Esegue la query SQL per inserire i dati nel database
     connection.query(newReviewSql, [name, review, rating, id], (err, results) => {
-        if (err) return res.status(500).json({ error: "Database query failed" })
-        res.status(201)
-        return res.json({ message: "Review added", id: results.insertId })
-    })
+        // Se c'è un errore nell'eseguire la query, restituisce un errore con status 500
+        if (err) return res.status(500).json({ error: "Database query failed" });
+
+        // Imposta lo stato della risposta HTTP a 201 (Creato) per indicare che la risorsa è stata creata con successo
+        res.status(201);
+
+        // Restituisce una risposta JSON con un messaggio di successo e l'ID della nuova recensione
+        return res.json({ message: "Review added", id: results.insertId });
+    });
 }
 
+
 function storeOrder(req, res) {
-    console.log("StoreOrder function called with data:", req.body); // Debug log
+    // Stampa un log con i dati ricevuti nella richiesta (utile per il debug)
+    console.log("StoreOrder function called with data:", req.body);
+
+    // Estrae i dati inviati nel corpo della richiesta (req.body) e li assegna a variabili locali
     const { name, total_price, surname, email, tax_id_code, address, phone_number } = req.body;
 
-    // Debug: verifica i dati ricevuti
+    // Stampa un log con i dati ricevuti per il debug, così puoi verificare se sono corretti
     console.log("Dati ricevuti:", req.body);
 
-    // Query SQL per inserire un ordine (rimosso il campo `status`)
+    // Crea una query SQL per inserire i dati dell'ordine nella tabella 'orders'.
+    // Si omette il campo 'status' che, presumibilmente, non è necessario per questa inserzione.
     const query = `
                 INSERT INTO orders (name, total_price, surname, email, tax_id_code, address, phone_number)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             `;
 
+    // Esegui la query SQL utilizzando i dati ricevuti nella richiesta.
+    // Gli argomenti (?) nella query vengono sostituiti dai valori specificati nell'array dopo la query
     connection.query(query, [name, total_price, surname, email, tax_id_code, address, phone_number], (err, results) => {
+        // Se c'è un errore durante l'esecuzione della query, stampa un messaggio di errore nel log
+        // e restituisce una risposta HTTP 500 (errore server) con un messaggio generico di fallimento della query
         if (err) {
-            console.error("Error inserting order:", err); // Improved error log
+            console.error("Error inserting order:", err); // Log dettagliato dell'errore
             return res.status(500).json({ error: "Database query failed" });
         }
-        console.log("Order added successfully with ID:", results.insertId); // Debug log
+
+        // Se l'inserimento è andato a buon fine, stampa l'ID dell'ordine appena creato nel log
+        // L'ID è accessibile tramite results.insertId, che è restituito dal database dopo un inserimento riuscito
+        console.log("Order added successfully with ID:", results.insertId); // Log di successo
+
+        // Restituisce una risposta HTTP 201 (Creato) con un messaggio di conferma e l'ID dell'ordine
         res.status(201).json({ message: "Order added", id: results.insertId });
     });
 }
 
+
+// Definisce una funzione che gestisce la richiesta di recupero delle email
 function indexEmail(req, res) {
-    // Query SQL per ottenere tutte le email
+    // Definisce una query SQL per ottenere tutte le email dalla tabella "client_email"
     const sql = 'SELECT * FROM client_email';
 
-    // Esegue la query per ottenere tutte le email
+    // Esegue la query SQL sulla connessione al database
     connection.query(sql, (err, results) => {
+        // Se si verifica un errore durante l'esecuzione della query
         if (err) {
-            // Logga l'errore e restituisce un errore 500 al client
+            // Logga l'errore nella console per il debug
             console.log(err);
+            // Restituisce una risposta con errore 500 (Internal Server Error) al client
             return res.status(500).json({ error: "Database query failed" });
         }
 
-        // Restituisce le email al client
+        // Se la query è stata eseguita con successo, restituisce i risultati (le email) al client in formato JSON
         res.json(results);
     });
 }
 
-// funzione per il pop up
+
+// funzione per il pop-up: gestisce l'inserimento di un'email e l'invio di un'email di benvenuto
 function storeEmail(req, res) {
+    // Estrae l'email dalla richiesta (req.body)
     const { email } = req.body;
 
-    // Query to check if the email already exists
+    // Query per controllare se l'email esiste già nel database
     const checkEmailSql = 'SELECT * FROM client_email WHERE email = ?';
 
+    // Esegue la query per verificare l'email
     connection.query(checkEmailSql, [email], (err, results) => {
         if (err) {
+            // Se si verifica un errore durante la query, logga l'errore e restituisce un errore al client
             console.error("Error checking email:", err);
             return res.status(500).json({ error: "Database query failed" });
         }
 
-        // If email already exists, return a conflict response
+        // Se l'email è già presente nel database (results.length > 0), restituisce un conflitto
         if (results.length > 0) {
             return res.status(409).json({ message: "Email already registered" });
         }
 
-        // Query to insert the new email
+        // Query per inserire la nuova email nel database
         const insertEmailSql = 'INSERT INTO client_email (email) VALUES (?)';
 
+        // Esegue la query per inserire l'email
         connection.query(insertEmailSql, [email], (err, insertResults) => {
             if (err) {
+                // Se si verifica un errore durante l'inserimento, logga l'errore e restituisce un errore al client
                 console.error("Error inserting email:", err);
                 return res.status(500).json({ error: "Database query failed" });
             }
 
-            // Send a welcome email
+            // Configurazione per inviare un'email di benvenuto
             const transporter = nodemailer.createTransport({
-                service: 'gmail', // Use your email service provider
+                service: 'gmail', // Usa il servizio Gmail per l'invio dell'email
                 auth: {
-                    user: 'albertoorlandowork@gmail.com', // Replace with your email
-                    pass: process.env.DB_PASS_EMAIL   // Replace with your email password
+                    user: 'albertoorlandowork@gmail.com', // Sostituisci con il tuo indirizzo email
+                    pass: process.env.DB_PASS_EMAIL   // Usa la password dell'email salvata nelle variabili d'ambiente
                 }
             });
 
+            // Impostazioni per il contenuto dell'email
             const mailOptions = {
-                from: 'albertoorlandowork@gmail.com', // Replace with your email
-                to: email,
-                subject: results.length > 0 ? "Bentornato in HYGGE!" : "Benvenuto in HYGGE!",
+                from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
+                to: email, // Destinatario dell'email (l'email fornita dall'utente)
+                subject: results.length > 0 ? "Bentornato in HYGGE!" : "Benvenuto in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
                 text: results.length > 0 ? "Grazie per essere tornato! Sei già iscritto alla nostra newsletter."
-                    : "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti."
+                    : "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti." // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
             };
 
+            // Invia l'email
             transporter.sendMail(mailOptions, (err, info) => {
                 if (err) {
+                    // Se si verifica un errore durante l'invio dell'email, logga l'errore e restituisce un errore al client
                     console.error("Error sending email:", err);
                     return res.status(500).json({ error: "Failed to send welcome email" });
                 }
 
+                // Se l'email è stata inviata con successo, logga la risposta e restituisce un successo al client
                 console.log("Welcome email sent:", info.response);
                 res.status(201).json({ message: "Email added and welcome email sent", id: insertResults.insertId });
             });
         });
     });
 }
+
 
 // Esporta le funzioni per l'uso in altre parti dell'applicazione
 module.exports = {
