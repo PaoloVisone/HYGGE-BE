@@ -409,7 +409,7 @@ function storeEmail(req, res) {
         if (err) {
             // Se si verifica un errore durante la query, logga l'errore e restituisce un errore al client
             console.error("Error checking email:", err);
-            return res.status(500).json({ error: "Email già presente nel sistema" });
+            return res.status(500).json({ error: "Database query failed" });
         }
 
         // Se l'email è già presente nel database (results.length > 0), restituisce un conflitto
@@ -464,7 +464,18 @@ function storeEmail(req, res) {
                 from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
                 to: email, // Destinatario dell'email (l'email fornita dall'utente)
                 subject: "Benvenuto in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
-                text: "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti." // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+                text: `Benvenuto nella famiglia HYGGE! 🌟
+
+                Grazie per esserti iscritto alla nostra newsletter! 
+                Siamo felici di averti con noi e, come regalo di benvenuto, abbiamo qualcosa di speciale per te.
+
+                Usa il codice: SALE10 
+                per ottenere uno sconto del 10% sul tuo prossimo acquisto!
+
+                Riceverai tutte le novità sui nostri prodotti e offerte esclusive.
+
+                A presto,
+                Il team HYGGE` // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
             };
 
             // Invia l'email
