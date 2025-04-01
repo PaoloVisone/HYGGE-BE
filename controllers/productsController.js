@@ -374,8 +374,9 @@ function storeEmail(req, res) {
             const mailOptions = {
                 from: 'albertoorlandowork@gmail.com', // Replace with your email
                 to: email,
-                subject: 'Welcome to Our Newsletter!',
-                text: 'Thank you for subscribing to our newsletter. Stay tuned for updates!'
+                subject: results.length > 0 ? "Bentornato in HYGGE!" : "Benvenuto in HYGGE!",
+                text: results.length > 0 ? "Grazie per essere tornato! Sei già iscritto alla nostra newsletter."
+                    : "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti."
             };
 
             transporter.sendMail(mailOptions, (err, info) => {
