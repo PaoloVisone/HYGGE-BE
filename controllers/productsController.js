@@ -393,6 +393,14 @@ function storeEmail(req, res) {
     // Estrae l'email dalla richiesta (req.body)
     const { email } = req.body;
 
+    const transporter = nodemailer.createTransport({
+        service: 'gmail', // Usa il servizio Gmail per l'invio dell'email
+        auth: {
+            user: 'albertoorlandowork@gmail.com', // Sostituisci con il tuo indirizzo email
+            pass: process.env.DB_PASS_EMAIL   // Usa la password dell'email salvata nelle variabili d'ambiente
+        }
+    });
+
     // Query per controllare se l'email esiste già nel database
     const checkEmailSql = 'SELECT * FROM client_email WHERE email = ?';
 
@@ -401,12 +409,34 @@ function storeEmail(req, res) {
         if (err) {
             // Se si verifica un errore durante la query, logga l'errore e restituisce un errore al client
             console.error("Error checking email:", err);
-            return res.status(500).json({ error: "Database query failed" });
+            return res.status(500).json({ error: "Email già presente nel sistema" });
         }
 
         // Se l'email è già presente nel database (results.length > 0), restituisce un conflitto
         if (results.length > 0) {
-            return res.status(409).json({ message: "Email already registered" });
+            // Configurazione per inviare un'email di benvenuto
+
+
+            // Impostazioni per il contenuto dell'email
+            const mailOptions = {
+                from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
+                to: email, // Destinatario dell'email (l'email fornita dall'utente)
+                subject: "Bentornato in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
+                text: "Grazie per essere tornato! Sei già iscritto alla nostra newsletter."  // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+            };
+
+            // Invia l'email
+            transporter.sendMail(mailOptions, (err, info) => {
+                if (err) {
+                    // Se si verifica un errore durante l'invio dell'email, logga l'errore e restituisce un errore al client
+                    console.error("Error sending email:", err);
+                    return res.status(500).json({ error: "Failed to send welcome email" });
+                }
+
+                // Se l'email è stata inviata con successo, logga la risposta e restituisce un successo al client
+                console.log("Welcomeback email sent:", info.response);
+                res.status(201).json({ message: "Email added and welcomeback email sent", id: insertResults.insertId });
+            });
         }
 
         // Query per inserire la nuova email nel database
@@ -417,7 +447,7 @@ function storeEmail(req, res) {
             if (err) {
                 // Se si verifica un errore durante l'inserimento, logga l'errore e restituisce un errore al client
                 console.error("Error inserting email:", err);
-                return res.status(500).json({ error: "Database query failed" });
+                return res.status(500).json({ error: "Nuova mail Database query failed" });
             }
 
             // Configurazione per inviare un'email di benvenuto
@@ -433,9 +463,8 @@ function storeEmail(req, res) {
             const mailOptions = {
                 from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
                 to: email, // Destinatario dell'email (l'email fornita dall'utente)
-                subject: results.length > 0 ? "Bentornato in HYGGE!" : "Benvenuto in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
-                text: results.length > 0 ? "Grazie per essere tornato! Sei già iscritto alla nostra newsletter."
-                    : "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti." // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+                subject: "Benvenuto in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
+                text: "Grazie per esserti iscritto alla nostra newsletter! Riceverai tutte le novità sui nostri prodotti." // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
             };
 
             // Invia l'email
