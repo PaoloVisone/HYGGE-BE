@@ -174,42 +174,42 @@ function showCategories(req, res) {
 
 // funzione per le ricerche
 function showSearchBar(req, res) {
-    // console.log('--- showSearchBar chiamata ---');
+    const { name, category, minPrice, maxPrice } = req.query; // Aggiungi i parametri per il prezzo
 
-    const { name, category } = req.query;
-
-    let searchTerm = null;
     let searchConditions = [];
     let queryParams = [];
 
+    // Filtro per il nome del prodotto
     if (name) {
-        searchTerm = name;
         searchConditions.push("LOWER(products.name) LIKE ?");
         queryParams.push(`%${name.toLowerCase()}%`);
     }
 
+    // Filtro per la categoria
     if (category) {
-        searchTerm = category;
         searchConditions.push("LOWER(categories.name) LIKE ?");
         queryParams.push(`%${category.toLowerCase()}%`);
     }
 
-    if (name && category) {
-        searchTerm = `${name} e ${category}`;
-        // If both name and category are provided, you might want to adjust the logic
-        // based on your specific search requirements.
-        // For example, you might want to search for products that match *both* name and category,
-        // or products that match *either* name or category.
-        // The current implementation will effectively search for products matching either.
+    // Filtro per il prezzo minimo
+    if (minPrice) {
+        searchConditions.push("products.price >= ?");
+        queryParams.push(Number(minPrice));
     }
 
-    // console.log('Termine di ricerca:', searchTerm);
-
-    if (!searchTerm) {
-        return res.status(400).json({ error: 'Termine di ricerca mancante' });
+    // Filtro per il prezzo massimo
+    if (maxPrice) {
+        searchConditions.push("products.price <= ?");
+        queryParams.push(Number(maxPrice));
     }
 
-    let sqlQuery = `
+    // Verifica che ci sia almeno un termine di ricerca
+    if (searchConditions.length === 0) {
+        return res.status(400).json({ error: 'Nessun criterio di ricerca fornito' });
+    }
+
+    // Costruisce la query SQL
+    const sqlQuery = `
         SELECT
             products.id,
             products.name,
@@ -220,19 +220,17 @@ function showSearchBar(req, res) {
         FROM products
         LEFT JOIN images ON products.id = images.product_id
         LEFT JOIN categories ON products.category_id = categories.id
-        WHERE ${searchConditions.join(' OR ')}
+        WHERE ${searchConditions.join(' AND ')}
     `;
 
-    // console.log('Eseguendo query:', sqlQuery, queryParams);
-
+    // Esegue la query
     connection.query(sqlQuery, queryParams, (err, results) => {
         if (err) {
             console.error('Errore durante la ricerca dei prodotti:', err);
             return res.status(500).json({ error: 'Errore interno del server' });
         }
 
-        // console.log('Risultati della query:', results);
-
+        // Raggruppa i prodotti e le immagini
         const products = results.reduce((acc, row) => {
             const product = acc.find(p => p.id === row.id);
             if (product) {
@@ -254,6 +252,7 @@ function showSearchBar(req, res) {
             return acc;
         }, []);
 
+        // Restituisce i prodotti filtrati
         res.json(products);
     });
 }
