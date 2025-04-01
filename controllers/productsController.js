@@ -1,102 +1,125 @@
-// Importa la connessione al database dal file db.js
+// Importa la connessione al database configurata nel file db.js
 const connection = require('../data/db');
 
-// Funzione per ottenere tutti i prodotti con le loro immagini
+/**
+ * GESTIONE PRODOTTI E IMMAGINI
+ */
+
+// Funzione per ottenere tutti i prodotti con le loro immagini associate
 function index(req, res) {
-    console.log("Index function called"); // Debug log
-    // Query SQL per ottenere tutti i prodotti dalla tabella "products"
+    // Log per debug dell'esecuzione della funzione
+    console.log("Index function called");
+
+    // Query SQL per selezionare tutti i prodotti dal database
     const mysqlProducts = 'SELECT * FROM products';
 
-    // Query SQL per ottenere le immagini di un prodotto specifico dalla tabella "images"
+    // Query SQL per ottenere le immagini associate a un prodotto specifico
     const mysqlProductsWithImages = 'SELECT * FROM images WHERE product_id = ?';
 
-    // Esegue la query per ottenere tutti i prodotti
+    // Esegue la query principale per ottenere tutti i prodotti
     connection.query(mysqlProducts, (err, results) => {
+        // Gestione errori nella query principale
         if (err) {
-            console.error("Error fetching products:", err); // Improved error log
+            console.error("Error fetching products:", err);
             return res.status(500).send('Internal Server Error');
         }
 
-        // Array per contenere i prodotti con le loro immagini
+        // Array per memorizzare i prodotti con le loro immagini
         const productsWithImages = [];
-        let count = 0; // Contatore per tracciare il completamento delle query annidate
+        // Contatore per tenere traccia delle query completate
+        let count = 0;
 
-        // Itera su ogni prodotto ottenuto dalla query principale
+        // Itera su ogni prodotto per ottenere le sue immagini
         results.forEach(product => {
-            // Esegue una query per ottenere le immagini del prodotto corrente
+            // Query per ottenere le immagini del prodotto corrente
             connection.query(mysqlProductsWithImages, [product.id], (err, images) => {
+                // Gestione errori nella query delle immagini
                 if (err) {
-                    console.error("Error fetching product images:", err); // Improved error log
+                    console.error("Error fetching product images:", err);
                     return res.status(500).send('Internal Server Error');
                 }
 
-                // Aggiunge il prodotto con le sue immagini all'array `productsWithImages`
+                // Aggiunge il prodotto e le sue immagini all'array
                 productsWithImages.push({
-                    ...product, // Copia tutti i campi del prodotto (ad esempio id, nome, prezzo, ecc.) utilizzando lo spread operator
-                    images: images.map(image => req.imagePath + image.url_image), // Trasforma l'array di immagini: per ogni immagine, aggiunge il percorso base (req.imagePath) al nome del file immagine (image.url_image) per creare un URL completo
+                    ...product, // Spread operator per copiare tutte le proprietà del prodotto
+                    // Mappa le immagini aggiungendo il percorso base
+                    images: images.map(image => req.imagePath + image.url_image)
                 });
 
-                count++; // Incrementa il contatore per ogni query completata
+                // Incrementa il contatore delle query completate
+                count++;
 
-                // Se tutte le query annidate sono completate, restituisce i dati al client
+                // Se tutte le query sono completate, invia la risposta
                 if (count === results.length) {
-                    console.log("Products with images fetched successfully"); // Debug log
-                    res.json(productsWithImages); // Restituisce l'array di prodotti con immagini
+                    console.log("Products with images fetched successfully");
+                    res.json(productsWithImages);
                 }
             });
         });
     });
 }
 
-// Funzione per ottenere un singolo prodotto con le sue recensioni
+/**
+ * GESTIONE SINGOLO PRODOTTO
+ */
+
+// Funzione per ottenere un singolo prodotto con recensioni e immagini
 function show(req, res) {
-    console.log("Show function called with ID:", req.params.id); // Debug log
-    // Ottiene l'ID del prodotto dai parametri della richiesta
+    // Log per debug con l'ID del prodotto richiesto
+    console.log("Show function called with ID:", req.params.id);
+
+    // Recupera l'ID del prodotto dai parametri della richiesta
     const id = req.params.id;
 
-    // Query SQL per ottenere il prodotto con l'ID specificato dalla tabella "products"
+    // Query SQL per ottenere il prodotto specifico
     const sql = 'SELECT * FROM products WHERE id = ?';
 
-    // Query SQL per ottenere le recensioni del prodotto specificato dalla tabella "reviews"
+    // Query SQL per ottenere le recensioni del prodotto
     const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
 
+    // Query SQL per ottenere le immagini del prodotto
     const imagesSql = "SELECT * FROM images WHERE product_id = ?";
 
-    // Esegue la query per ottenere il prodotto
+    // Esegue la query principale per ottenere il prodotto
     connection.query(sql, [id], (err, results) => {
+        // Gestione errori nella query del prodotto
         if (err) {
-            console.error("Error fetching product:", err); // Improved error log
+            console.error("Error fetching product:", err);
             return res.status(500).json({ error: "Il database non risponde" });
         }
+
+        // Se il prodotto non viene trovato
         if (results.length === 0) {
-            console.warn("Product not found for ID:", id); // Warning log
+            console.warn("Product not found for ID:", id);
             return res.status(404).json({ error: "Prodotto non trovato" });
         }
 
-        // Esegue la query per ottenere le recensioni del prodotto
+        // Query per ottenere le recensioni
         connection.query(reviewSql, [id], (err, reviews) => {
+            // Gestione errori nella query delle recensioni
             if (err) {
-                console.error("Error fetching reviews:", err); // Improved error log
+                console.error("Error fetching reviews:", err);
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
+            // Query per ottenere le immagini
             connection.query(imagesSql, [id], (err, images) => {
+                // Gestione errori nella query delle immagini
                 if (err) {
-                    console.error("Error fetching images:", err); // Improved error log
+                    console.error("Error fetching images:", err);
                     return res.status(500).json({ error: "Il database non risponde" });
                 }
 
-                // Aggiunge le recensioni al prodotto
+                // Aggiunge recensioni e immagini al prodotto
                 results[0].reviews = reviews;
                 results[0].images = images.map(image => req.imagePath + image.url_image);
-                console.log("Product fetched successfully with reviews and images"); // Debug log
-                // Restituisce il prodotto con le sue recensioni al client
+
+                // Log di successo
+                console.log("Product fetched successfully with reviews and images");
+
+                // Invia la risposta completa
                 res.json(results[0]);
             });
-
-
-
-
         });
     });
 }
@@ -328,15 +351,15 @@ function storeEmail(req, res) {
 
 }
 
-// Esporta le funzioni per essere utilizzate in altre parti dell'applicazione
+// Esporta le funzioni per l'uso in altre parti dell'applicazione
 module.exports = {
-    index, // Funzione per ottenere tutti i prodotti con immagini
-    show, // Funzione per ottenere un singolo prodotto con recensioni
-    storeReview, // Funzione per salvare una nuova recensione
-    showSearchBar,
-    showCategories,
-    indexCategories,
-    storeOrder,
-    storeEmail,
-    indexEmail
+    index,           // Gestisce la visualizzazione di tutti i prodotti
+    show,            // Gestisce la visualizzazione di un singolo prodotto
+    storeReview,     // Gestisce il salvataggio di una nuova recensione
+    showSearchBar,   // Gestisce la ricerca dei prodotti
+    showCategories,  // Gestisce la visualizzazione dei prodotti per categoria
+    indexCategories, // Gestisce la lista delle categorie
+    storeOrder,      // Gestisce il salvataggio di un nuovo ordine
+    storeEmail,      // Gestisce il salvataggio di una email per newsletter
+    indexEmail       // Gestisce la lista delle email salvate
 };
