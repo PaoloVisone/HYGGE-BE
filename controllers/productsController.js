@@ -393,6 +393,7 @@ function storeEmail(req, res) {
     // Estrae l'email dalla richiesta (req.body)
     const { email } = req.body;
 
+    // Crea un trasportatore per inviare email tramite Gmail
     const transporter = nodemailer.createTransport({
         service: 'gmail', // Usa il servizio Gmail per l'invio dell'email
         auth: {
@@ -416,13 +417,19 @@ function storeEmail(req, res) {
         if (results.length > 0) {
             // Configurazione per inviare un'email di benvenuto
 
-
             // Impostazioni per il contenuto dell'email
             const mailOptions = {
                 from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
                 to: email, // Destinatario dell'email (l'email fornita dall'utente)
                 subject: "Bentornato in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
-                text: "Grazie per essere tornato! Sei già iscritto alla nostra newsletter."  // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+                text: `Bentornato nella famiglia HYGGE! 🌟
+
+                Grazie per il tuo continuo interesse! Siamo felici di averti ancora con noi.
+                Continuerai a ricevere tutte le nostre novità e offerte esclusive direttamente 
+                nella tua casella di posta.
+
+                A presto con nuove sorprese!
+                Il team HYGGE 🎁`  // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
             };
 
             // Invia l'email
@@ -439,7 +446,7 @@ function storeEmail(req, res) {
             });
         }
 
-        // Query per inserire la nuova email nel database
+        // Query per inserire la nuova email nel database (se non trovata)
         const insertEmailSql = 'INSERT INTO client_email (email) VALUES (?)';
 
         // Esegue la query per inserire l'email
@@ -451,6 +458,8 @@ function storeEmail(req, res) {
             }
 
             // Configurazione per inviare un'email di benvenuto
+
+            // Nuovo trasportatore per inviare l'email di benvenuto
             const transporter = nodemailer.createTransport({
                 service: 'gmail', // Usa il servizio Gmail per l'invio dell'email
                 auth: {
@@ -463,7 +472,7 @@ function storeEmail(req, res) {
             const mailOptions = {
                 from: 'albertoorlandowork@gmail.com', // Indirizzo email mittente
                 to: email, // Destinatario dell'email (l'email fornita dall'utente)
-                subject: "Benvenuto in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
+                subject: "Benvenuto in HYGGE!", // Oggetto dell'email
                 text: `Benvenuto nella famiglia HYGGE! 🌟
 
                 Grazie per esserti iscritto alla nostra newsletter! 
@@ -475,7 +484,7 @@ function storeEmail(req, res) {
                 Riceverai tutte le novità sui nostri prodotti e offerte esclusive.
 
                 A presto,
-                Il team HYGGE` // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+                Il team HYGGE` // Corpo dell'email
             };
 
             // Invia l'email
@@ -493,6 +502,7 @@ function storeEmail(req, res) {
         });
     });
 }
+
 
 
 // Esporta le funzioni per l'uso in altre parti dell'applicazione
