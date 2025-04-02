@@ -72,65 +72,38 @@ function index(req, res) {
 
 // Funzione per ottenere un singolo prodotto con recensioni e immagini
 function show(req, res) {
-    // Log per debug con l'ID del prodotto richiesto
-    console.log("Show function called with ID:", req.params.id);
+    console.log("Show function called with slug:", req.params.slug);
 
-    // Recupera l'ID del prodotto dai parametri della richiesta (presumibilmente passato nell'URL)
-    const id = req.params.id;
+    const slug = req.params.slug; // Usa lo slug dai parametri della richiesta
+    const sql = 'SELECT * FROM products WHERE slug = ?';
+    const reviewSql = "SELECT * FROM reviews WHERE product_id = (SELECT id FROM products WHERE slug = ?)";
+    const imagesSql = "SELECT * FROM images WHERE product_id = (SELECT id FROM products WHERE slug = ?)";
 
-    // Query SQL per ottenere il prodotto specifico tramite l'ID
-    const sql = 'SELECT * FROM products WHERE id = ?';
-
-    // Query SQL per ottenere le recensioni associate al prodotto
-    const reviewSql = "SELECT * FROM reviews WHERE product_id = ?";
-
-    // Query SQL per ottenere le immagini associate al prodotto
-    const imagesSql = "SELECT * FROM images WHERE product_id = ?";
-
-    // Esegue la query principale per ottenere il prodotto specifico
-    connection.query(sql, [id], (err, results) => {
-        // Gestione errori nella query del prodotto
+    connection.query(sql, [slug], (err, results) => {
         if (err) {
-            // Se si verifica un errore durante il recupero del prodotto, stampa l'errore e invia una risposta di errore 500
             console.error("Error fetching product:", err);
             return res.status(500).json({ error: "Il database non risponde" });
         }
-
-        // Se il prodotto non viene trovato nel database
         if (results.length === 0) {
-            // Stampa un avviso nel caso in cui il prodotto con l'ID richiesto non esista
-            console.warn("Product not found for ID:", id);
-            // Risponde con errore 404 (prodotto non trovato)
+            console.warn("Product not found for slug:", slug);
             return res.status(404).json({ error: "Prodotto non trovato" });
         }
 
-        // Esegue la query per ottenere le recensioni associate al prodotto
-        connection.query(reviewSql, [id], (err, reviews) => {
-            // Gestione errori nella query delle recensioni
+        connection.query(reviewSql, [slug], (err, reviews) => {
             if (err) {
-                // Se si verifica un errore durante il recupero delle recensioni, stampa l'errore e invia una risposta di errore 500
                 console.error("Error fetching reviews:", err);
                 return res.status(500).json({ error: "Il database non risponde" });
             }
 
-            // Esegue la query per ottenere le immagini associate al prodotto
-            connection.query(imagesSql, [id], (err, images) => {
-                // Gestione errori nella query delle immagini
+            connection.query(imagesSql, [slug], (err, images) => {
                 if (err) {
-                    // Se si verifica un errore durante il recupero delle immagini, stampa l'errore e invia una risposta di errore 500
                     console.error("Error fetching images:", err);
                     return res.status(500).json({ error: "Il database non risponde" });
                 }
 
-                // Aggiunge le recensioni e le immagini al prodotto trovato
                 results[0].reviews = reviews;
-                // Mappa le immagini aggiungendo il percorso base per ogni URL immagine
                 results[0].images = images.map(image => req.imagePath + image.url_image);
-
-                // Log di successo per il recupero del prodotto con recensioni e immagini
                 console.log("Product fetched successfully with reviews and images");
-
-                // Invia la risposta completa al client con il prodotto, le recensioni e le immagini
                 res.json(results[0]);
             });
         });
@@ -160,11 +133,7 @@ function indexCategories(req, res) {
 
 // Funzione per ottenere i prodotti di una categoria specifica con le immagini associate
 function showCategories(req, res) {
-
-    // Estrae l'ID della categoria dai parametri della richiesta
-    const { id } = req.params;
-
-    // Query SQL per ottenere i prodotti con le categorie e le immagini associate
+    const { id } = req.params; // Usa l'id della categoria
     const sql = `
         SELECT 
             products.id, 
@@ -175,43 +144,33 @@ function showCategories(req, res) {
             images.url_image 
         FROM products 
         JOIN categories ON categories.id = products.category_id 
-        JOIN images  ON products.id = images.product_id
+        JOIN images ON products.id = images.product_id
         WHERE categories.id = ?;
     `;
 
-    // Esegue la query per ottenere i prodotti della categoria specificata (con le immagini associate)
     connection.query(sql, [id], (err, results) => {
-        // Gestione errori nella query
         if (err) {
-            // Se c'è un errore durante l'esecuzione della query, stampa l'errore e invia una risposta 500
             console.log(err);
             return res.status(500).json({ error: "Database query failed" });
         }
 
-        // Mappa i prodotti e raggruppa le immagini per prodotto
         const products = results.reduce((acc, row) => {
-            // Cerca se il prodotto è già stato aggiunto all'array accumulato
             const product = acc.find(p => p.id === row.id);
             if (product) {
-                // Se il prodotto esiste già, aggiungi l'immagine al suo array di immagini
                 product.images.push(req.imagePath + row.url_image);
             } else {
-                // Se il prodotto non esiste, crea un nuovo oggetto prodotto con le immagini
-                acc.push({  // Aggiunge un nuovo prodotto all'array `acc` (l'array accumulato)
-                    id: row.id,  // L'ID del prodotto (dal database)
-                    name: row.name,  // Il nome del prodotto (dal database)
-                    price: row.price,  // Il prezzo del prodotto (dal database)
-                    description: row.description,  // La descrizione del prodotto (dal database)
-                    category_name: row.category_name,  // Il nome della categoria a cui appartiene il prodotto (dal database)
-                    images: [req.imagePath + row.url_image]  // Aggiunge l'URL completo dell'immagine del prodotto, concatenando `req.imagePath` e `row.url_image`
-
+                acc.push({
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: [req.imagePath + row.url_image]
                 });
-
             }
-            return acc;  // Restituisce l'array aggiornato di prodotti
-        }, []);  // Inizia con un array vuoto
+            return acc;
+        }, []);
 
-        // Restituisce l'array di prodotti con le immagini al client
         res.json(products);
     });
 }
@@ -307,25 +266,36 @@ function showSearchBar(req, res) {
 
 // Funzione per salvare una nuova recensione
 function storeReview(req, res) {
-    // Estrae l'ID del prodotto dalla URL (parametri della richiesta)
-    const { id } = req.params;
+    const { slug } = req.params; // Usa lo slug del prodotto
+    const { name, review, rating } = req.body; // Estrae i dati della recensione
 
-    // Estrae i dati della recensione (nome, testo e valutazione) dal corpo della richiesta
-    const { name, review, rating } = req.body;
+    // Query per ottenere l'id del prodotto tramite lo slug
+    const getProductIdSql = 'SELECT id FROM products WHERE slug = ?';
 
-    // Definisce la query SQL per inserire la nuova recensione nel database
-    const newReviewSql = 'INSERT INTO reviews (name, review, rating, product_id) VALUES (?, ?, ?, ?)';
+    connection.query(getProductIdSql, [slug], (err, results) => {
+        if (err) {
+            console.error("Error fetching product ID:", err);
+            return res.status(500).json({ error: "Database query failed" });
+        }
 
-    // Esegue la query SQL per inserire i dati nel database
-    connection.query(newReviewSql, [name, review, rating, id], (err, results) => {
-        // Se c'è un errore nell'eseguire la query, restituisce un errore con status 500
-        if (err) return res.status(500).json({ error: "Database query failed" });
+        if (results.length === 0) {
+            console.warn("Product not found for slug:", slug);
+            return res.status(404).json({ error: "Prodotto non trovato" });
+        }
 
-        // Imposta lo stato della risposta HTTP a 201 (Creato) per indicare che la risorsa è stata creata con successo
-        res.status(201);
+        const productId = results[0].id; // Ottieni l'id del prodotto
 
-        // Restituisce una risposta JSON con un messaggio di successo e l'ID della nuova recensione
-        return res.json({ message: "Review added", id: results.insertId });
+        // Query per inserire la nuova recensione
+        const newReviewSql = 'INSERT INTO reviews (name, review, rating, product_id) VALUES (?, ?, ?, ?)';
+
+        connection.query(newReviewSql, [name, review, rating, productId], (err, results) => {
+            if (err) {
+                console.error("Error inserting review:", err);
+                return res.status(500).json({ error: "Database query failed" });
+            }
+
+            res.status(201).json({ message: "Review added", id: results.insertId });
+        });
     });
 }
 

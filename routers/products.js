@@ -36,13 +36,13 @@ router.get('/email', indexEmail)
 router.post('/email/create', storeEmail)
 
 // Route per ottenere un prodotto specifico tramite ID
-router.get('/:id', show);
+router.get('/:slug', show);
 
 // Route per ottenere i prodotti di una categoria specifica
 router.get('/category/:id', showCategories);
 
 // Route per salvare una nuova recensione per un prodotto specifico
-router.post('/:id/reviews/create', storeReview)
+router.post('/:slug/reviews/create', storeReview)
 
 // Esporta il router per essere utilizzato nell'applicazione principale
 module.exports = router;
