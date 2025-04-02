@@ -179,46 +179,40 @@ function showCategories(req, res) {
 
 
 
-// funzione per le ricerche
+// Funzione per le ricerche con ordinamento per prezzo
 function showSearchBar(req, res) {
-    // Estrae i parametri della query dalla richiesta (req.query) per nome, categoria e prezzi
-    const { name, category, minPrice, maxPrice } = req.query; // Aggiungi i parametri per il prezzo
+    // Estrae i parametri della query dalla richiesta
+    const { name, category, sortPrice } = req.query; // sortPrice può essere 'asc' o 'desc'
 
-    let searchConditions = [];  // Array per memorizzare le condizioni di ricerca
-    let queryParams = [];       // Array per memorizzare i valori dei parametri da passare alla query SQL
+    let searchConditions = [];  // Array per le condizioni di ricerca
+    let queryParams = [];      // Array per i parametri della query
+    let orderByClause = '';    // Clausola per l'ordinamento
 
-    // Filtro per il nome del prodotto (se fornito nella query)
+    // Filtro per il nome del prodotto
     if (name) {
-        searchConditions.push("LOWER(products.name) LIKE ?");  // Aggiunge una condizione per cercare il nome (ignorando maiuscole/minuscole)
-        queryParams.push(`%${name.toLowerCase()}%`);  // Aggiunge il nome alla lista dei parametri della query (come "LIKE %nome%")
+        searchConditions.push("LOWER(products.name) LIKE ?");
+        queryParams.push(`%${name.toLowerCase()}%`);
     }
 
-    // Filtro per la categoria (se fornito nella query)
+    // Filtro per la categoria
     if (category) {
-        searchConditions.push("LOWER(categories.name) LIKE ?");  // Aggiunge una condizione per cercare la categoria (ignorando maiuscole/minuscole)
-        queryParams.push(`%${category.toLowerCase()}%`);  // Aggiunge la categoria alla lista dei parametri della query (come "LIKE %categoria%")
+        searchConditions.push("LOWER(categories.name) LIKE ?");
+        queryParams.push(`%${category.toLowerCase()}%`);
     }
 
-    // Filtro per il prezzo minimo (se fornito nella query)
-    if (minPrice) {
-        searchConditions.push("products.price >= ?");  // Aggiunge una condizione per il prezzo minimo
-        queryParams.push(Number(minPrice));  // Aggiunge il valore del prezzo minimo alla lista dei parametri (come valore numerico)
+    // Imposta l'ordinamento per prezzo se specificato
+    if (sortPrice) {
+        orderByClause = `ORDER BY products.price ${sortPrice === 'asc' ? 'ASC' : 'DESC'}`;
     }
 
-    // Filtro per il prezzo massimo (se fornito nella query)
-    if (maxPrice) {
-        searchConditions.push("products.price <= ?");  // Aggiunge una condizione per il prezzo massimo
-        queryParams.push(Number(maxPrice));  // Aggiunge il valore del prezzo massimo alla lista dei parametri (come valore numerico)
-    }
+    // Se non ci sono filtri di ricerca, usa una condizione sempre vera
+    const whereClause = searchConditions.length > 0
+        ? `WHERE ${searchConditions.join(' AND ')}`
+        : '';
 
-    // Verifica che ci sia almeno un termine di ricerca (altrimenti restituisce un errore)
-    if (searchConditions.length === 0) {
-        return res.status(400).json({ error: 'Nessun criterio di ricerca fornito' });  // Se non ci sono filtri, restituisce un errore
-    }
-
-    // Costruisce la query SQL dinamicamente in base alle condizioni di ricerca
+    // Costruisce la query SQL con ordinamento
     const sqlQuery = `
-        SELECT
+        SELECT DISTINCT
             products.id,  
             products.slug,
             products.name,  
@@ -229,41 +223,38 @@ function showSearchBar(req, res) {
         FROM products
         LEFT JOIN images ON products.id = images.product_id 
         LEFT JOIN categories ON products.category_id = categories.id
-        WHERE ${searchConditions.join(' AND ')} 
+        ${whereClause} 
+        ${orderByClause}
     `;
 
-    // Esegue la query SQL nel database
+    // Esegue la query
     connection.query(sqlQuery, queryParams, (err, results) => {
-        // Gestisce eventuali errori durante l'esecuzione della query
         if (err) {
-            console.error('Errore durante la ricerca dei prodotti:', err);  // Log dell'errore
-            return res.status(500).json({ error: 'Errore interno del server' });  // Risposta di errore al client
+            console.error('Errore durante la ricerca dei prodotti:', err);
+            return res.status(500).json({ error: 'Errore interno del server' });
         }
 
-        // Raggruppa i risultati dei prodotti e delle immagini (nel caso ci siano più immagini per lo stesso prodotto)
+        // Raggruppa i risultati
         const products = results.reduce((acc, row) => {
-            const product = acc.find(p => p.id === row.id);  // Cerca se il prodotto è già presente nell'array
+            const product = acc.find(p => p.id === row.id);
             if (product) {
-                // Se il prodotto esiste già, aggiungi l'immagine alla lista delle immagini
                 if (row.url_image) {
-                    product.images.push(req.imagePath + row.url_image);  // Aggiunge l'URL completo dell'immagine
+                    product.images.push(req.imagePath + row.url_image);
                 }
             } else {
-                // Se il prodotto non esiste, lo crea con le informazioni di base e l'immagine
                 acc.push({
-                    id: row.id,  // Id del prodotto
-                    name: row.name,  // Nome del prodotto
-                    price: row.price,  // Prezzo del prodotto
-                    slug: row.slug,  // Slug del prodotto
-                    description: row.description,  // Descrizione del prodotto
-                    category_name: row.category_name,  // Nome della categoria
-                    images: row.url_image ? [req.imagePath + row.url_image] : []  // Aggiunge l'immagine se disponibile
+                    id: row.id,
+                    name: row.name,
+                    price: row.price,
+                    slug: row.slug,
+                    description: row.description,
+                    category_name: row.category_name,
+                    images: row.url_image ? [req.imagePath + row.url_image] : []
                 });
             }
-            return acc;  // Restituisce l'array aggiornato di prodotti
-        }, []);  // Inizializza l'array vuoto per raccogliere i risultati
+            return acc;
+        }, []);
 
-        // Restituisce i prodotti filtrati come risposta JSON
         res.json(products);
     });
 }
