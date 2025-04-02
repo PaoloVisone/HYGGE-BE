@@ -52,7 +52,7 @@ const sendOrderConfirmationEmail = async (email, orderDetails) => {
 // Importa i middleware e i router necessari
 const errorsHandler = require('./middlewares/errorsHandler');    // Gestore errori
 const notFound = require('./middlewares/notFound');             // Gestore 404
-const productsRouter = require('./routers/products');           // Router prodotti
+const products = require('./routers/products');           // Router prodotti
 const imagePath = require('./middlewares/imagePath');           // Middleware percorso immagini
 const cors = require('cors');                                   // Middleware CORS
 
@@ -68,7 +68,7 @@ app.get("/api", (req, res) => {
 });
 
 // Monta il router dei prodotti
-app.use('/api/products', productsRouter);
+app.use('/api/products', products);
 
 // Endpoint per la conferma dell'ordine
 app.post("/api/confirm-order", (req, res) => {
