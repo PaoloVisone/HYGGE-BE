@@ -137,6 +137,7 @@ function showCategories(req, res) {
     const sql = `
         SELECT 
             products.id, 
+            products.slug,
             products.name, 
             products.price, 
             products.description, 
@@ -163,6 +164,7 @@ function showCategories(req, res) {
                     id: row.id,
                     name: row.name,
                     price: row.price,
+                    slug: row.slug,
                     description: row.description,
                     category_name: row.category_name,
                     images: [req.imagePath + row.url_image]
@@ -218,6 +220,7 @@ function showSearchBar(req, res) {
     const sqlQuery = `
         SELECT
             products.id,  
+            products.slug,
             products.name,  
             products.price,  
             products.description,  
@@ -251,6 +254,7 @@ function showSearchBar(req, res) {
                     id: row.id,  // Id del prodotto
                     name: row.name,  // Nome del prodotto
                     price: row.price,  // Prezzo del prodotto
+                    slug: row.slug,  // Slug del prodotto
                     description: row.description,  // Descrizione del prodotto
                     category_name: row.category_name,  // Nome della categoria
                     images: row.url_image ? [req.imagePath + row.url_image] : []  // Aggiunge l'immagine se disponibile
