@@ -389,12 +389,12 @@ function storeEmail(req, res) {
                 subject: "Bentornato in HYGGE!", // Oggetto dell'email, cambia se l'utente è già registrato
                 text: `Bentornato nella famiglia HYGGE! 🌟
 
-                Grazie per il tuo continuo interesse! Siamo felici di averti ancora con noi.
-                Continuerai a ricevere tutte le nostre novità e offerte esclusive direttamente 
-                nella tua casella di posta.
+Grazie per il tuo continuo interesse! Siamo felici di averti ancora con noi.
+Continuerai a ricevere tutte le nostre novità e offerte esclusive direttamente 
+nella tua casella di posta.
 
-                A presto con nuove sorprese!
-                Il team HYGGE 🎁`  // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
+A presto con nuove sorprese!
+Il team HYGGE 🎁`  // Corpo dell'email, diverso a seconda se l'utente è nuovo o tornato
             };
 
             // Invia l'email
@@ -440,16 +440,16 @@ function storeEmail(req, res) {
                 subject: "Benvenuto in HYGGE!", // Oggetto dell'email
                 text: `Benvenuto nella famiglia HYGGE! 🌟
 
-                Grazie per esserti iscritto alla nostra newsletter! 
-                Siamo felici di averti con noi e, come regalo di benvenuto, abbiamo qualcosa di speciale per te.
+Grazie per esserti iscritto alla nostra newsletter! 
+Siamo felici di averti con noi e, come regalo di benvenuto, abbiamo qualcosa di speciale per te.
 
-                Usa il codice: SALE10 
-                per ottenere uno sconto del 10% sul tuo prossimo acquisto!
+Usa il codice: SALE10 
+per ottenere uno sconto del 10% sul tuo prossimo acquisto!
 
-                Riceverai tutte le novità sui nostri prodotti e offerte esclusive.
+Riceverai tutte le novità sui nostri prodotti e offerte esclusive.
 
-                A presto,
-                Il team HYGGE` // Corpo dell'email
+A presto,
+Il team HYGGE` // Corpo dell'email
             };
 
             // Invia l'email
