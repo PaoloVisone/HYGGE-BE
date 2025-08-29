@@ -25,5 +25,12 @@ HYGGE-BE è il backend progettato per supportare un'app di e-commerce: ideale pe
 
 ---
 
-##  Struttura del progetto
+##  Funzionalità principali
+
+-  CRUD completo per **prodotti**, **utenti** e **ordini**  
+-  **Autenticazione** utenti con token (JWT)  
+-  **Middleware** per gestione errori e autorizzazioni  
+-  API strutturate in pattern RESTful: `GET`, `POST`, `PUT`, `DELETE`
+-  **Configurazione centralizzata** tramite `.env`
+
 
